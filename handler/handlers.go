@@ -20,32 +20,33 @@ type UrlCreationRequest struct {
 }
 
 
+
 func CreateShortUrl(c string) string{
 	_, ok := LinkList[c] 
 	if ok {
 		fmt.Println("Already have this link")
-		return c
-	}
-	
+		return LinkList[c]
+	} 
 	LinkList[c] = shortener.GenerateShortLink(c)
 
-	return c
+	return LinkList[c]
 }
-
-	
 
 // GetURL - Find link that matches the shortened link in the linkList
 func GetLink(ShortURL string) string{
+	var LongUrl string
 	i:=0
 	for key, value := range LinkList {
 			if value == ShortURL{
-				Redirect(key)		
-				return ShortURL
+				LongUrl = key
+				Redirect(LongUrl)		
+				return LongUrl 
 		}
 			i++
 		}
 	fmt.Println("The link doesn't exist.")
-	return ShortURL
+	
+	return LongUrl
 }
 
 // Redirect
