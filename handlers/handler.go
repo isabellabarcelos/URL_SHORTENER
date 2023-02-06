@@ -1,10 +1,10 @@
-package main
+package handler
 
 import (
 	"fmt"
-	"strings"
-	"github.com/isabellabarcelos/url-shortener-2/handler"
-	"github.com/isabellabarcelos/url-shortener-2/store"
+	"github.com/isabellabarcelos/URL_SHORTENER/shortener"
+	"net/http"
+	"log"
 )
 
 var (
@@ -12,7 +12,7 @@ var (
 )
 
 // SaveUrlMapping - Add a link to the linkList and generate a shorter link
-func SaveUrlMapping(LongLink string) {
+func CreateShortUrl(LongLink string, UserId string) {
 
 	_, ok := LinkList[LongLink] 
 	if ok {
@@ -20,17 +20,17 @@ func SaveUrlMapping(LongLink string) {
 		return
 	}
 	
-	LinkList[LongLink] = handler.GenerateUrl(LongLink)	
+	LinkList[LongLink] = shortener.GenerateShortLink(LongLink, UserId)
 	return
 	
 }
 
 // GetURL - Find link that matches the shortened link in the linkList
-func getLink(ShortLink string) {
+func GetLink(ShortLink string) {
 	i:=0
 	for key, value := range LinkList {
 			if value == ShortLink{
-			    handler.redirect(key)		
+				Redirect(key)		
 				return 
 		}
 			i++
@@ -38,8 +38,9 @@ func getLink(ShortLink string) {
 	fmt.Println("Already have this link")
 	return 
 }
-	
 
-													
-
-	
+// Redirect
+func Redirect(Link string) {
+	http.Handle("/", http.RedirectHandler(Link, http.StatusMovedPermanently))
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
