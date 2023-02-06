@@ -5,38 +5,47 @@ import (
 	"github.com/isabellabarcelos/url_shortener/shortener"
 	"net/http"
 	"log"
+
 )
 
 var (
-	LinkList map[string]string
+	LinkList = map[string]string{}
 )
 
-// SaveUrlMapping - Add a link to the linkList and generate a shorter link
-func CreateShortUrl(LongLink string, UserId string) {
 
-	_, ok := LinkList[LongLink] 
-	if ok {
-		fmt.Println("Already have this link")
-		return
-	}
-	
-	LinkList[LongLink] = shortener.GenerateShortLink(LongLink, UserId)
-	return
-	
+
+// Request model definition
+type UrlCreationRequest struct {
+	LongUrl string `json:"long_url" binding:"required"`
 }
 
+
+func CreateShortUrl(c string) string{
+	_, ok := LinkList[c] 
+	if ok {
+		fmt.Println("Already have this link")
+		return c
+	}
+	
+	LinkList[c] = shortener.GenerateShortLink(c)
+
+	return c
+}
+
+	
+
 // GetURL - Find link that matches the shortened link in the linkList
-func GetLink(ShortLink string) {
+func GetLink(ShortURL string) string{
 	i:=0
 	for key, value := range LinkList {
-			if value == ShortLink{
+			if value == ShortURL{
 				Redirect(key)		
-				return 
+				return ShortURL
 		}
 			i++
 		}
-	fmt.Println("Already have this link")
-	return 
+	fmt.Println("The link doesn't exist.")
+	return ShortURL
 }
 
 // Redirect

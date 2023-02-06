@@ -4,24 +4,39 @@ package main
 import (
 	"fmt"
 	"github.com/isabellabarcelos/url_shortener/handler"
-	"github.com/gin-gonic/gin"
+	"net/http"
+	"io"
+	"os"
+	"errors"
+
 )
 
+func POST(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("Create short URL\n")
+
+	key, _:= r.URL.Query()["long_url"]
+	
+	io.WriteString(w,handler.CreateShortUrl(key))
+
+}
+func GET(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("Get URL\n")
+	key, _:= r.URL.Query()["long_url"]
+	io.WriteString(w, handler.GetLink(key))
+}
+
 func main() {
-	r := gin.Default()
+	http.HandleFunc("/", POST)
+	http.HandleFunc("/get-url", GET)
 
-	r.POST("/create-short-url", func(c *gin.Context) {
-		handler.CreateShortUrl(c)
-	})
+	err := http.ListenAndServe(":8080", nil)
 
-	r.GET("/shortUrl", func(c *gin.Context) {
-		handler.GetLink(c)
-	})
-
-
-	err := r.Run(":8080")
-	if err != nil {
-		panic(fmt.Sprintf("Failed to start the web server - Error: %v", err))
+	
+  if errors.Is(err, http.ErrServerClosed) {
+		fmt.Printf("server closed\n")
+	} else if err != nil {
+		fmt.Printf("error starting server: %s\n", err)
+		os.Exit(1)
 	}
 
 }
