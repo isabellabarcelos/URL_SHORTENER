@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	/*"strings"
+	"strings"
 	"github.com/isabellabarcelos/url-shortener-2/handler"
-	// "github.com/isabellabarcelos/url-shortener-2/store"*/
+	"github.com/isabellabarcelos/url-shortener-2/store"
 )
 
 var (
@@ -20,22 +20,26 @@ func SaveUrlMapping(LongLink string) {
 		return
 	}
 	
-	//LinkList[LongLink] = handler.GenerateUrl(LongLink)	
+	LinkList[LongLink] = handler.GenerateUrl(LongLink)	
 	return
 	
 }
 
 // GetURL - Find link that matches the shortened link in the linkList
-//func getLink(ShortLink string) {
-//	i:=0
-//	for key, value := range LinkList {
-	//	if value == ShortLink{
-	//		return 
-	//	}
-	//	i++
-//	}
+func getLink(ShortLink string) {
+	i:=0
+	for key, value := range LinkList {
+			if value == ShortLink{
+			    handler.redirect(key)		
+				return 
+		}
+			i++
+		}
+	fmt.Println("Already have this link")
+	return 
+}
 	
-//	LinkList[ShortLink] = handler.GenerateUrl(LongLink)	//mapeia
-														//redireciona
+
+													
 
 	
