@@ -2,7 +2,7 @@ package handler
 
 import (
 	"fmt"
-	"github.com/isabellabarcelos/URL_SHORTENER/shortener"
+	"github.com/isabellabarcelos/url_shortener/shortener"
 	"net/http"
 	"log"
 )
