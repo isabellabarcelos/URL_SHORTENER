@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"strings"
-	"time"
+
+	"github.com/isabellabarcelos/url_shortener/repository"
 )
 
 // API rest - JSON
@@ -20,24 +20,20 @@ type APIError struct {
 	Error string `json:"error"`
 }
 
-var (
-	linkList map[string]string
-)
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
+type Handler struct {
+	repo repository.Repo
 }
 
 func main() {
-	linkList = map[string]string{}
+	h := Handler{repo: repository.New()}
 
-	http.HandleFunc("/", CreateUrl)
-	http.HandleFunc("/short/", GetUrl)
+	http.HandleFunc("/", h.CreateUrl)
+	http.HandleFunc("/short/", h.GetUrl)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func CreateUrl(w http.ResponseWriter, r *http.Request) {
+func (h Handler) CreateUrl(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("request")
 	key, ok := r.URL.Query()["url"]
 	if !ok {
@@ -48,7 +44,7 @@ func CreateUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	value, found := linkList[key[0]]
+	value, found := h.repo.Get(key[0])
 	if found {
 		w.WriteHeader(http.StatusOK)
 		err := ShortenedURL{OriginalURL: key[0], ShortenedURL: value}
@@ -56,12 +52,14 @@ func CreateUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	genString := fmt.Sprint(rand.Int63n(1000))
-	linkList[genString] = key[0]
+	shortS, err := h.repo.Insert(key[0])
+	if err != nil {
+		return
+	}
 
 	short := ShortenedURL{
 		OriginalURL:  key[0],
-		ShortenedURL: fmt.Sprintf("http://localhost:8080/short/%s", genString),
+		ShortenedURL: fmt.Sprintf("http://localhost:8080/short/%s", shortS),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -69,9 +67,18 @@ func CreateUrl(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(short)
 }
 
-func GetUrl(w http.ResponseWriter, r *http.Request) {
+func (h Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	pathArgs := strings.Split(path, "/")
-	log.Printf("Redirected to: %s", linkList[pathArgs[2]])
-	http.Redirect(w, r, linkList[pathArgs[2]], http.StatusPermanentRedirect)
+	value, found := h.repo.Get(pathArgs[2])
+	if !found {
+		w.WriteHeader(http.StatusBadRequest)
+		err := APIError{Error: "Failed to redirect link"}
+		fmt.Printf("error: %v\n", err)
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	log.Printf("Redirected to: %s", value)
+	http.Redirect(w, r, value, http.StatusPermanentRedirect)
 }
