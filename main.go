@@ -25,22 +25,22 @@ type Handler struct {
 }
 
 func main() {
-	h := Handler{repo: repository.New()}
+	h := Handler{repo: repository.New()} //create a new repository h (h has all repo methods using h.repo)
 
-	http.HandleFunc("/", h.CreateUrl)
+	http.HandleFunc("/", h.CreateUrl) 
 	http.HandleFunc("/short/", h.GetUrl)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func (h Handler) CreateUrl(w http.ResponseWriter, r *http.Request) {
+func (h Handler) CreateUrl(w http.ResponseWriter, r *http.Request) { 
 	fmt.Println("request")
 	key, ok := r.URL.Query()["url"]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest) 
 		err := APIError{Error: fmt.Sprintf("Failed to add link %v", key)}
 		fmt.Printf("error: %v\n", err)
-		json.NewEncoder(w).Encode(err)
+		json.NewEncoder(w).Encode(err) // encode the error variable (err) to http.ResponseWiter variable w
 		return
 	}
 
