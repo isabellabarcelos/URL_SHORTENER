@@ -1,64 +1,59 @@
 package main
 
-
 import (
 	"fmt"
-	"github.com/isabellabarcelos/url_shortener/handler"
-	"net/http"
-	"os"
-	"errors"
-	"encoding/json"
 	"log"
-
+	"math/rand"
+	"net/http"
+	"strings"
+	"time"
 )
 
-func POST(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("Create short URL\n")
+var (
+	linkList map[string]string
+)
 
-	key:= r.URL.Query()
-
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-Type", "application/json")
-	resp := make(map[string]string)
-	resp["short_url"] = handler.CreateShortUrl(key.Get("long_url"))
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
-	}
-	w.Write(jsonResp)
-	return
-	
-}
-func GET(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("Get URL\n")
-	key := r.URL.Query()
-
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-Type", "application/json")
-	resp := make(map[string]string)
-	resp["long_url"] = handler.GetLink(key.Get("long_url"))
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
-	}
-	w.Write(jsonResp)
-	return
-
-
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
 
 func main() {
-	http.HandleFunc("/", POST)
-	http.HandleFunc("/get-url", GET)
+	linkList = map[string]string{}
 
-	err := http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/", CreateUrl)
+	http.HandleFunc("/short/", GetUrl)
 
-	
-  if errors.Is(err, http.ErrServerClosed) {
-		fmt.Printf("server closed\n")
-	} else if err != nil {
-		fmt.Printf("error starting server: %s\n", err)
-		os.Exit(1)
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func CreateUrl(w http.ResponseWriter, r *http.Request) {
+	key, ok := r.URL.Query()["url"]
+	if ok {
+		if _, ok := linkList[key[0]]; !ok {
+			genString := fmt.Sprint(rand.Int63n(1000))
+			linkList[genString] = key[0]
+			w.Header().Set("Content-Type", "text/html")
+			w.WriteHeader(http.StatusAccepted)
+			linkString := fmt.Sprintf("<a href=\"http://localhost:8080/short/%s\">http://localhost:8080/short/%s</a>", genString, genString)
+			fmt.Fprintf(w, "Added shortlink\n")
+			fmt.Fprintf(w, linkString)
+			return
+		}
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprintf(w, "Already have this link")
+		return
 	}
 
+	w.WriteHeader(http.StatusBadRequest)
+	fmt.Fprintf(w, "Failed to add link")
+	return
 }
+
+func GetUrl(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	pathArgs := strings.Split(path, "/")
+	log.Printf("Redirected to: %s", linkList[pathArgs[2]])
+	http.Redirect(w, r, linkList[pathArgs[2]], http.StatusPermanentRedirect)
+	return
+}
+
